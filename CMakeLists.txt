@@ -10,20 +10,24 @@ set(COMPILE_FLAGS
 )
 
 set(SRC
-  main.c
   src/buffer.c
 )
 
-add_executable(${PROJECT_NAME} ${SRC})
+add_library(${PROJECT_NAME}-lib STATIC ${SRC})
 
 target_compile_options(
-  ${PROJECT_NAME}
+  ${PROJECT_NAME}-lib
   PRIVATE
   ${COMPILE_FLAGS}
 )
 
 target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE
+  ${PROJECT_NAME}-lib
+  PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+add_executable(${PROJECT_NAME} main.c)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}-lib)
+
+add_subdirectory(tests)
