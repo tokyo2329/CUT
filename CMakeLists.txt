@@ -7,8 +7,9 @@ set(COMPILE_FLAGS
   -Wall -Wextra
 )
 
-set(SRC 
+set(SRC
   main.c
+  src/buffer.c
 )
 
 add_executable(${PROJECT_NAME} ${SRC})
