@@ -5,7 +5,7 @@ project(CUT)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-set(COMPILE_FLAGS 
+set(COMPILE_FLAGS
   -Wall -Wextra
 )
 
@@ -30,4 +30,5 @@ target_include_directories(
 add_executable(${PROJECT_NAME} main.c)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}-lib)
 
+enable_testing()
 add_subdirectory(tests)
