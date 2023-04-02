@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(CUT)
 
+option(TESTS "Use TESTS to enable testing" ON)
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
@@ -30,5 +32,7 @@ target_include_directories(
 add_executable(${PROJECT_NAME} main.c)
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}-lib)
 
-enable_testing()
-add_subdirectory(tests)
+if(TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
