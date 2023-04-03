@@ -8,7 +8,7 @@ extern "C" {
 
 
 TEST(BufferTest, Init) {
-  Buffer b;
+  buffer b;
   init_buffer(&b);
 
   // try to lock and unlock the initialized mutex
@@ -18,8 +18,8 @@ TEST(BufferTest, Init) {
   destroy_buffer(&b);
 }
 
-TEST(BufferTest, Write) {
-  Buffer b;
+TEST(BufferTest, WriteRead) {
+  buffer b;
   init_buffer(&b);
 
   char * test_string = "Hello world!";
@@ -29,20 +29,7 @@ TEST(BufferTest, Write) {
   
   EXPECT_STREQ(result, test_string);
   
-  destroy_buffer(&b);
-}
-
-TEST(BufferTest, Read) {
-  Buffer b;
-  init_buffer(&b);
-
-  char * test_string = "Hello world!";
-  write_to_buffer(&b, test_string);
-
-  char * result = read_from_buffer(&b);
-  
-  EXPECT_STREQ(result, test_string);
-
+  free(result);
   destroy_buffer(&b);
 }
 

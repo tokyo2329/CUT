@@ -1,18 +1,26 @@
 #pragma once
 
 #include <pthread.h>
+#include <semaphore.h>
 
 #define BUFFER_SIZE 100
 
 typedef struct {
   char data[BUFFER_SIZE];
   pthread_mutex_t mtx;
-} Buffer;
+  sem_t sp;
+} buffer;
 
-void init_buffer(Buffer * b);
+typedef struct {
+  unsigned long
+  user, nice, system, idle, iowait,
+  irq, softirq, steal, guest, guest_nice;
+} cpu_data;
 
-void destroy_buffer(Buffer * b);
+void init_buffer(buffer * b);
 
-void write_to_buffer(Buffer * b, char * d);
+void destroy_buffer(buffer * b);
 
-char * read_from_buffer(Buffer * b);
+void write_to_buffer(buffer * b, char * d);
+
+char * read_from_buffer(buffer * b);
