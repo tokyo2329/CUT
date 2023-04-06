@@ -4,11 +4,12 @@
 
 extern "C" {
   #include "buffer.h"
+  #include "cpu_data.h"
 }
 
 TEST(BufferTest, InitBufferTest) {
   buffer b;
-  init_buffer(&b);
+  init_buffer(&b, sizeof(cpu_data));
 
   EXPECT_EQ(b.head, nullptr);
   EXPECT_EQ(b.tail, nullptr);
@@ -18,10 +19,10 @@ TEST(BufferTest, InitBufferTest) {
 
 TEST(BufferTest, DestroyBufferTest) {
   buffer b;
-  init_buffer(&b);
+  init_buffer(&b, sizeof(cpu_data));
 
   cpu_data data[] = { (cpu_data){ .user = 5 } };
-  enqueue(&b, data);
+  enqueue(&b, (void *)data);
 
   destroy_buffer(&b);
 
@@ -31,26 +32,27 @@ TEST(BufferTest, DestroyBufferTest) {
 
 TEST(BufferTest, EnqueueTest) {
   buffer b;
-  init_buffer(&b);
+  init_buffer(&b, sizeof(cpu_data));
 
   cpu_data data[] = { (cpu_data){ .user = 5 } };
-  enqueue(&b, data);
+  enqueue(&b, (void *)data);
 
   EXPECT_EQ(b.head, b.tail);
   EXPECT_EQ(b.head->next, nullptr);
-  EXPECT_EQ(b.head->values[0].user, data[0].user);
+  cpu_data * tmp = (cpu_data *)b.head->values;
+  EXPECT_EQ(tmp[0].user, data[0].user);
 
   destroy_buffer(&b);
 }
 
 TEST(BufferTest, DequeueTest) {
   buffer b;
-  init_buffer(&b);
+  init_buffer(&b, sizeof(cpu_data));
 
   cpu_data data[] = { (cpu_data){ .user = 5 } };
-  enqueue(&b, data);
+  enqueue(&b, (void *)data);
 
-  cpu_data * result = dequeue(&b);
+  cpu_data * result = (cpu_data *)dequeue(&b);
 
   EXPECT_EQ(result[0].user, data[0].user);
   EXPECT_EQ(b.head, nullptr);

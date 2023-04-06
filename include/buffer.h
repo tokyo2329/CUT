@@ -4,30 +4,30 @@
 #include <semaphore.h>
 #include <unistd.h>
 
-#include "cpu_data.h"
-
-#define BUFFER_SIZE 100
-
 typedef struct node {
   struct node * next;
-  cpu_data values[]; // FAM (Flexible Array Members)
+  void * values[]; // FAM (Flexible Array Members)
 } node;
 
 typedef struct {
   node * head;
   node * tail;
+  size_t element_size;
 
   pthread_mutex_t mtx;
   sem_t sp;
 } buffer;
 
 
-void init_buffer(buffer * b);
+// initializes a buffer with default values
+void init_buffer(buffer * b, size_t element_size);
 
+// destroys a buffer by freeing the remaining memory
 void destroy_buffer(buffer * b);
 
-void enqueue(buffer * b, cpu_data data[]);
+// adds to a buffer
+void enqueue(buffer * b, void * data);
 
-cpu_data * dequeue(buffer * b);
+// gets from a buffer
+void * dequeue(buffer * b);
 
-// void print(const buffer * b);

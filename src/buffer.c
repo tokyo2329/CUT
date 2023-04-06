@@ -5,7 +5,7 @@
 
 #include "buffer.h"
 
-void init_buffer(buffer * b) {
+void init_buffer(buffer * b, size_t element_size) {
   
   // init mutex and semaphore
   pthread_mutex_init(&b->mtx, NULL);
@@ -14,6 +14,7 @@ void init_buffer(buffer * b) {
   // init queue
   b->head = NULL;
   b->tail = NULL;
+  b->element_size = element_size;
 }
 
 void destroy_buffer(buffer * b) {
@@ -35,18 +36,18 @@ void destroy_buffer(buffer * b) {
   sem_destroy(&b->sp);
 }
 
-void enqueue(buffer * b, cpu_data data[]) {
+void enqueue(buffer * b, void * data) {
   
   pthread_mutex_lock(&b->mtx);
 
   // init new node
-  node * new_node = malloc(sizeof(node) + (sizeof(cpu_data) * (CORE_NUM + 1)));
+  node * new_node = malloc(sizeof(node) + b->element_size);
   
   // fail if malloc fails to allocate memory
   if(new_node == NULL)
     exit(1);
   
-  memcpy(new_node->values, data, sizeof(cpu_data) * (CORE_NUM + 1));
+  memcpy(new_node->values, data, b->element_size);
   new_node->next = NULL;
 
   // add node to queue
@@ -63,7 +64,7 @@ void enqueue(buffer * b, cpu_data data[]) {
   sem_post(&b->sp);
 }
 
-cpu_data * dequeue(buffer * b) {
+void * dequeue(buffer * b) {
   sem_wait(&b->sp);
   pthread_mutex_lock(&b->mtx);
 
@@ -72,13 +73,13 @@ cpu_data * dequeue(buffer * b) {
     return NULL;
   
   // fetch the value
-  cpu_data * rtn_value = malloc(sizeof(cpu_data) * (CORE_NUM + 1));
+  void * rtn_value = malloc(b->element_size);
   
   // fail if malloc fails to allocate memory
   if(rtn_value == NULL)
     exit(1);
   
-  memcpy(rtn_value, b->head->values, sizeof(cpu_data) * (CORE_NUM + 1));
+  memcpy(rtn_value, b->head->values, b->element_size);
 
   // move the queue
   node * tmp = b->head;
@@ -93,13 +94,3 @@ cpu_data * dequeue(buffer * b) {
 
   return rtn_value;
 }
-
-// void print(const buffer * b) {
-//   buffer_node * iter = b->head;
-  
-//   while(iter != NULL) {
-//     printf("%s, ", iter->value);
-//     iter = iter->next;
-//   }
-//   printf("\n");
-// }
