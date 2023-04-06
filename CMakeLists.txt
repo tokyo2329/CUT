@@ -13,6 +13,7 @@ set(COMPILE_FLAGS
 
 set(SRC
   src/buffer.c
+  src/cpu_data.c
 )
 
 add_library(${PROJECT_NAME}-lib STATIC ${SRC})
