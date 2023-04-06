@@ -2,25 +2,32 @@
 
 #include <pthread.h>
 #include <semaphore.h>
+#include <unistd.h>
+
+#include "cpu_data.h"
 
 #define BUFFER_SIZE 100
 
+typedef struct node {
+  struct node * next;
+  cpu_data values[]; // FAM (Flexible Array Members)
+} node;
+
 typedef struct {
-  char data[BUFFER_SIZE];
+  node * head;
+  node * tail;
+
   pthread_mutex_t mtx;
   sem_t sp;
 } buffer;
 
-typedef struct {
-  unsigned long
-  user, nice, system, idle, iowait,
-  irq, softirq, steal, guest, guest_nice;
-} cpu_data;
 
 void init_buffer(buffer * b);
 
 void destroy_buffer(buffer * b);
 
-void write_to_buffer(buffer * b, char * d);
+void enqueue(buffer * b, cpu_data data[]);
 
-char * read_from_buffer(buffer * b);
+cpu_data * dequeue(buffer * b);
+
+// void print(const buffer * b);

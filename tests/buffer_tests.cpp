@@ -6,32 +6,60 @@ extern "C" {
   #include "buffer.h"
 }
 
-
-TEST(BufferTest, Init) {
+TEST(BufferTest, InitBufferTest) {
   buffer b;
   init_buffer(&b);
 
-  // try to lock and unlock the initialized mutex
-  pthread_mutex_lock(&b.mtx);
-  pthread_mutex_unlock(&b.mtx);
+  EXPECT_EQ(b.head, nullptr);
+  EXPECT_EQ(b.tail, nullptr);
 
   destroy_buffer(&b);
 }
 
-TEST(BufferTest, WriteRead) {
+TEST(BufferTest, DestroyBufferTest) {
   buffer b;
   init_buffer(&b);
 
-  char * test_string = "Hello world!";
-  write_to_buffer(&b, test_string);
-  
-  char * result = read_from_buffer(&b);
-  
-  EXPECT_STREQ(result, test_string);
-  
+  cpu_data data[] = { (cpu_data){ .user = 5 } };
+  enqueue(&b, data);
+
+  destroy_buffer(&b);
+
+  EXPECT_EQ(b.head, nullptr);
+  EXPECT_EQ(b.tail, nullptr);
+}
+
+TEST(BufferTest, EnqueueTest) {
+  buffer b;
+  init_buffer(&b);
+
+  cpu_data data[] = { (cpu_data){ .user = 5 } };
+  enqueue(&b, data);
+
+  EXPECT_EQ(b.head, b.tail);
+  EXPECT_EQ(b.head->next, nullptr);
+  EXPECT_EQ(b.head->values[0].user, data[0].user);
+
+  destroy_buffer(&b);
+}
+
+TEST(BufferTest, DequeueTest) {
+  buffer b;
+  init_buffer(&b);
+
+  cpu_data data[] = { (cpu_data){ .user = 5 } };
+  enqueue(&b, data);
+
+  cpu_data * result = dequeue(&b);
+
+  EXPECT_EQ(result[0].user, data[0].user);
+  EXPECT_EQ(b.head, nullptr);
+  EXPECT_EQ(b.tail, nullptr);
+
   free(result);
   destroy_buffer(&b);
 }
+
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
