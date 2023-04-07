@@ -13,6 +13,7 @@ set(COMPILE_FLAGS
 
 set(SRC
   src/buffer.c
+  src/threads.c
   src/cpu_data.c
 )
 
