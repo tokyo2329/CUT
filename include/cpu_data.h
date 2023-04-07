@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdlib.h>
+
 #define CORE_NUM sysconf(_SC_NPROCESSORS_ONLN)
 
 typedef struct {
