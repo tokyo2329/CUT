@@ -33,6 +33,12 @@ void * printer(void * arg);
 /*
 * Watchdog thread
 * It's job is to listen for heartbeats from other threads and exit
-* if considers any unreponsive
+* if considers any unresponsive
 */
 void * watchdog(void * arg);
+
+/*
+* Logger thread
+* It's job is to collect log data from other threads and output them to a file
+*/
+void * logger(void * arg);

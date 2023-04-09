@@ -5,6 +5,7 @@
 
 #include "threads.h"
 #include "cpu_data.h"
+#include "log_data.h"
 #include "buffer.h"
 
 
@@ -26,6 +27,9 @@ void * reader(void *) {
       exit(1);
     }
 
+    log_data read_log = { .thread_name = "Reader", .message = "Read /proc/stat" };
+    enqueue(&logs, &read_log);
+
     // read line for total and each core
     cpu_data data[CORE_NUM + 1];
     for(int i = 0; i < CORE_NUM + 1; i++) {
@@ -39,8 +43,11 @@ void * reader(void *) {
       free(line);
     }
 
+    log_data write_log = { .thread_name = "Reader", .message = "Wrote to buffer" };
+    enqueue(&logs, &write_log);
+    
     enqueue(&raw_data, data);
-
+    
     fclose(file);
     usleep(THREAD_SLEEP_USEC);
   }
@@ -55,6 +62,9 @@ void * analyzer(void *) {
 
     cpu_data * prev = (cpu_data *)dequeue(&raw_data);
     cpu_data * current = (cpu_data *)dequeue(&raw_data);
+
+    log_data read_log = { .thread_name = "Analyzer", .message = "Read 2 values from buffer" };
+    enqueue(&logs, &read_log);
 
     double * calucalted_results = malloc(sizeof(double) * (CORE_NUM + 1));
 
@@ -80,6 +90,9 @@ void * analyzer(void *) {
     }
 
     enqueue(&calculated_usage, (void *)calucalted_results);
+
+    log_data write_log = { .thread_name = "Analyzer", .message = "Calculated usage and added to buffer" };
+    enqueue(&logs, &write_log);
 
     free(calucalted_results);
     free(prev);
@@ -132,8 +145,32 @@ void * watchdog(void * arg) {
     pthread_mutex_lock(&heartbeats_mtx);
     for(int i = 0; i < thread_number; i++) {
       if(heartbeats[i] == previous_heartbeats[i]) {
-        printf("!!! Some threads are unresponsive, exiting !!!\n");
-        exit(1);
+        char * log_message;
+        
+        switch (i) {
+          case 0:
+            log_message = "Reader seems unresponsive";
+            break;
+          case 1:
+            log_message = "Analyzer seems unresponsive";
+            break;
+          case 2:
+            log_message = "Printer seems unresponsive";
+            break;
+          case 3:
+            log_message = "Watchdog seems unresponsive";
+            break;
+          case 4:
+            log_message = "Logger seems unresponsive";
+            break;
+          default:
+            log_message = "Something went wrong";
+            break;
+        }
+
+        log_data unresponsive_log = { .thread_name = "Watchdog", .message = log_message };
+        enqueue(&logs, &unresponsive_log);
+
       } else heartbeats[i]--;
     }
 
@@ -142,4 +179,29 @@ void * watchdog(void * arg) {
 
     pthread_mutex_unlock(&heartbeats_mtx);
   }
+}
+
+void * logger(void *) {
+  char filename[] = "logs.txt";
+  FILE * f = fopen(filename, "w");
+  
+  while(1) {
+    // send a heartbeat
+    pthread_mutex_lock(&heartbeats_mtx);
+    heartbeats[3]++;
+    pthread_mutex_unlock(&heartbeats_mtx);
+
+    // check if file is writable
+    if(f == NULL) {
+      printf("Can't write to %s!\n", filename);
+      exit(1);
+    }
+
+    log_data * log = (log_data *)dequeue(&logs);
+    fprintf(f, "[CUT] Thread: %s -> message: %s\n", log->thread_name, log->message);
+    
+    free(log);
+  }
+
+  fclose(f);
 }
