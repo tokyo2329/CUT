@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "threads.h"
 #include "cpu_data.h"
@@ -14,6 +15,11 @@ void * reader(void * arg) {
   char filename[] = "/proc/stat";
 
   while(1) {
+    // send a heartbeat
+    pthread_mutex_lock(&heartbeats_mtx);
+    heartbeats[0]++;
+    pthread_mutex_unlock(&heartbeats_mtx);
+
     file = fopen(filename, "r");
 
     // check if file is readable
@@ -38,7 +44,7 @@ void * reader(void * arg) {
     enqueue(buf, data);
 
     fclose(file);
-    sleep(THREAD_SLEEP_SEC);
+    usleep(THREAD_SLEEP_USEC);
   }
 }
 
@@ -49,6 +55,11 @@ void * analyzer(void * arg) {
   buffer * out_buf = (buffer *)args[1];
 
   while(1) {
+    // send a heartbeat
+    pthread_mutex_lock(&heartbeats_mtx);
+    heartbeats[1]++;
+    pthread_mutex_unlock(&heartbeats_mtx);
+
     cpu_data * prev = (cpu_data *)dequeue(buf);
     cpu_data * current = (cpu_data *)dequeue(buf);
 
@@ -73,7 +84,6 @@ void * analyzer(void * arg) {
       double usage = ((totald - idled) * 100.0) / (double)totald;
 
       calucalted_results[i] = usage;
-      // printf("CPU[%d] USAGE: %.2f%%\n", i, usage);
     }
 
     enqueue(out_buf, (void *)calucalted_results);
@@ -88,6 +98,11 @@ void * printer(void * arg) {
   buffer * b = (buffer *)arg;
 
   while(1) {
+    // send a heartbeat
+    pthread_mutex_lock(&heartbeats_mtx);
+    heartbeats[2]++;
+    pthread_mutex_unlock(&heartbeats_mtx);
+
     double * usage_values = (double *)dequeue(b);
 
     printf("\n\nTOTAL CPU USAGE - %.2f%%\n\n", usage_values[0]);
@@ -96,12 +111,44 @@ void * printer(void * arg) {
       
       printf("CPU %d\t| ", i);
 
-      for(int j = 0; j <= usage_values[i] / 2; j++)
+      for(int j = 0; j < usage_values[i] / 2; j++)
         printf("-");
-      printf("> %.2f%%\n", usage_values[i]);
-      
+      printf(">");
+
+      if(usage_values[i] > 0.00)
+        printf(" %.2f%%", usage_values[i]);
+      printf("\n");
+
     }
 
     free(usage_values);
+  }
+}
+
+void * watchdog(void * arg) {
+  int thread_number = *(int *)arg;
+
+  // set initial values
+  int previous_heartbeats[thread_number];
+  pthread_mutex_lock(&heartbeats_mtx);
+  for(int i = 0; i < thread_number; i++)
+    previous_heartbeats[i] = heartbeats[i];
+  pthread_mutex_unlock(&heartbeats_mtx);
+
+  while(1) {
+    sleep(HEARTBEAT_CHECK_SEC);
+
+    pthread_mutex_lock(&heartbeats_mtx);
+    for(int i = 0; i < thread_number; i++) {
+      if(heartbeats[i] == previous_heartbeats[i]) {
+        printf("!!! Some threads are unresponsive, exiting !!!\n");
+        exit(1);
+      } else heartbeats[i]--;
+    }
+
+    for(int i = 0; i < thread_number; i++)
+      previous_heartbeats[i] = heartbeats[i];
+
+    pthread_mutex_unlock(&heartbeats_mtx);
   }
 }

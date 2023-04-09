@@ -2,13 +2,12 @@
 
 #include "buffer.h"
 
-#define THREAD_SLEEP_SEC 1
+#define THREAD_SLEEP_USEC 500000
+#define HEARTBEAT_CHECK_SEC 3
 #define DATA_LINE_BUFFER 1024
 
-typedef struct {
-  buffer * b1;
-  buffer * b2;
-} buffers;
+extern volatile int heartbeats[];
+extern pthread_mutex_t heartbeats_mtx;
 
 /*
 * Reader thread
@@ -28,3 +27,10 @@ void * analyzer(void * arg);
 * It's job is to print the calculated usage to the console
 */
 void * printer(void * arg);
+
+/*
+* Watchdog thread
+* It's job is to listen for heartbeats from other threads and exit
+* if considers any unreponsive
+*/
+void * watchdog(void * arg);

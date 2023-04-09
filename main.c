@@ -6,13 +6,21 @@
 #include "buffer.h"
 #include "cpu_data.h"
 
-#define THREAD_NUM 5
+#define THREAD_NUM 4
+
 
 // buffers
 buffer raw_data;
 buffer calculated_usage;
 
+
+// 'heartbeat' array (except watchdog)
+volatile int heartbeats[THREAD_NUM - 1];
+pthread_mutex_t heartbeats_mtx;
+
+
 void sigterm_handler(int);
+
 
 int main() {
 
@@ -27,6 +35,11 @@ int main() {
   init_buffer(&raw_data, sizeof(cpu_data) * (CORE_NUM + 1));
   init_buffer(&calculated_usage, sizeof(double) * (CORE_NUM + 1));
 
+  pthread_mutex_init(&heartbeats_mtx, NULL);
+  for(int i = 0; i < THREAD_NUM - 1; i++)
+    heartbeats[i] = 0; // set initial values
+  int number_of_threads = THREAD_NUM - 1; // except watchdog // helper to pass to thread
+
   // thread pool
   pthread_t thread_pool[THREAD_NUM];
 
@@ -34,6 +47,7 @@ int main() {
   pthread_create(&thread_pool[0], NULL, &reader, &raw_data);
   pthread_create(&thread_pool[1], NULL, &analyzer, (void * []){ &raw_data, &calculated_usage });
   pthread_create(&thread_pool[2], NULL, &printer, &calculated_usage);
+  pthread_create(&thread_pool[3], NULL, &watchdog, (void *)&number_of_threads);
 
   for(int i = 0; i < THREAD_NUM; i++)
     pthread_join(thread_pool[i], NULL);
@@ -47,6 +61,5 @@ void sigterm_handler(int num) {
   destroy_buffer(&calculated_usage);
 
   write(STDOUT_FILENO, "Done. Exiting.\n", 15);
-
   exit(0);
 }
