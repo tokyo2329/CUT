@@ -10,9 +10,7 @@
 
 
 // buffers
-buffer raw_data;
-buffer calculated_usage;
-
+buffer raw_data, calculated_usage, logs;
 
 // 'heartbeat' array (except watchdog)
 volatile int heartbeats[THREAD_NUM - 1];
@@ -35,6 +33,7 @@ int main() {
   init_buffer(&raw_data, sizeof(cpu_data) * (CORE_NUM + 1));
   init_buffer(&calculated_usage, sizeof(double) * (CORE_NUM + 1));
 
+  // initialize watchdog dependencies
   pthread_mutex_init(&heartbeats_mtx, NULL);
   for(int i = 0; i < THREAD_NUM - 1; i++)
     heartbeats[i] = 0; // set initial values
@@ -44,9 +43,9 @@ int main() {
   pthread_t thread_pool[THREAD_NUM];
 
   // initialize threads
-  pthread_create(&thread_pool[0], NULL, &reader, &raw_data);
-  pthread_create(&thread_pool[1], NULL, &analyzer, (void * []){ &raw_data, &calculated_usage });
-  pthread_create(&thread_pool[2], NULL, &printer, &calculated_usage);
+  pthread_create(&thread_pool[0], NULL, &reader, NULL);
+  pthread_create(&thread_pool[1], NULL, &analyzer, NULL);
+  pthread_create(&thread_pool[2], NULL, &printer, NULL);
   pthread_create(&thread_pool[3], NULL, &watchdog, (void *)&number_of_threads);
 
   for(int i = 0; i < THREAD_NUM; i++)

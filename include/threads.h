@@ -6,6 +6,8 @@
 #define HEARTBEAT_CHECK_SEC 3
 #define DATA_LINE_BUFFER 1024
 
+extern buffer raw_data, calculated_usage, logs;
+
 extern volatile int heartbeats[];
 extern pthread_mutex_t heartbeats_mtx;
 

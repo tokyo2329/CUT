@@ -8,9 +8,7 @@
 #include "buffer.h"
 
 
-void * reader(void * arg) {
-  buffer * buf = (buffer *)arg;
-  
+void * reader(void *) {
   FILE * file;
   char filename[] = "/proc/stat";
 
@@ -41,27 +39,22 @@ void * reader(void * arg) {
       free(line);
     }
 
-    enqueue(buf, data);
+    enqueue(&raw_data, data);
 
     fclose(file);
     usleep(THREAD_SLEEP_USEC);
   }
 }
 
-void * analyzer(void * arg) {
-  void ** args = (void **)arg;
-
-  buffer * buf = (buffer *)args[0];
-  buffer * out_buf = (buffer *)args[1];
-
+void * analyzer(void *) {
   while(1) {
     // send a heartbeat
     pthread_mutex_lock(&heartbeats_mtx);
     heartbeats[1]++;
     pthread_mutex_unlock(&heartbeats_mtx);
 
-    cpu_data * prev = (cpu_data *)dequeue(buf);
-    cpu_data * current = (cpu_data *)dequeue(buf);
+    cpu_data * prev = (cpu_data *)dequeue(&raw_data);
+    cpu_data * current = (cpu_data *)dequeue(&raw_data);
 
     double * calucalted_results = malloc(sizeof(double) * (CORE_NUM + 1));
 
@@ -86,7 +79,7 @@ void * analyzer(void * arg) {
       calucalted_results[i] = usage;
     }
 
-    enqueue(out_buf, (void *)calucalted_results);
+    enqueue(&calculated_usage, (void *)calucalted_results);
 
     free(calucalted_results);
     free(prev);
@@ -94,16 +87,14 @@ void * analyzer(void * arg) {
   }
 }
 
-void * printer(void * arg) {
-  buffer * b = (buffer *)arg;
-
+void * printer(void *) {
   while(1) {
     // send a heartbeat
     pthread_mutex_lock(&heartbeats_mtx);
     heartbeats[2]++;
     pthread_mutex_unlock(&heartbeats_mtx);
 
-    double * usage_values = (double *)dequeue(b);
+    double * usage_values = (double *)dequeue(&calculated_usage);
 
     printf("\n\nTOTAL CPU USAGE - %.2f%%\n\n", usage_values[0]);
 
