@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
+#include <string.h>
 
 #include "threads.h"
 #include "buffer.h"
@@ -25,6 +26,7 @@ int main() {
 
   // handle SIGTERM
   struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
   sa.sa_handler = sigterm_handler;
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGINT, &sa, NULL);
